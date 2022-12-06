@@ -31,6 +31,16 @@ public class TodoService {
         return dtoList;
     }
 
+    public TodoDTO updateTodo(final TodoEntity entity) {
+        TodoEntity todo = todoRepository.findById(entity.getId()).orElseThrow(() -> new RuntimeException("Entity is Empty"));
+
+        todo.setDone(entity.getDone());
+        todo.setId(entity.getId());
+        todo.setTitle(entity.getTitle());
+
+        return new TodoDTO(entity);
+    }
+
     private void validate(final TodoEntity entity) {
         if (entity == null) {
             log.warn("Entity cannot be null");

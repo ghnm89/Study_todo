@@ -56,4 +56,20 @@ public class TodoController {
 
         return ResponseEntity.ok().body(response);
     }
+
+    @PostMapping("/update")
+    public ResponseEntity<?> updateTodo(@RequestBody TodoDTO request) {
+
+        TodoEntity todoEntity = TodoDTO.toEntity(request);
+
+        TodoDTO dto = todoService.updateTodo(todoEntity);
+
+        List<TodoDTO> dtoList = List.of(dto);
+
+        ResponseDTO<TodoDTO> response = ResponseDTO.<TodoDTO>builder()
+                .data(dtoList)
+                .build();
+
+        return ResponseEntity.ok().body(response);
+    }
 }

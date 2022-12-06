@@ -1,5 +1,6 @@
 package com.example.demo.service;
 
+import com.example.demo.dto.TodoDTO;
 import com.example.demo.entity.TodoEntity;
 import com.example.demo.repository.TodoRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +21,14 @@ public class TodoService {
         todoRepository.save(entity);
         log.info("Entity id : {} is saved", entity.getId());
         return todoRepository.findByUserId(entity.getUserId());
+    }
+
+    public List<TodoDTO> readTodoList() {
+        List<TodoEntity> entityList = todoRepository.findAll();
+
+        List<TodoDTO> dtoList = entityList.stream().map(TodoDTO::new).toList();
+
+        return dtoList;
     }
 
     private void validate(final TodoEntity entity) {

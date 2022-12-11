@@ -32,13 +32,24 @@ public class TodoService {
     }
 
     public TodoDTO updateTodo(final TodoEntity entity) {
-        TodoEntity todo = todoRepository.findById(entity.getId()).orElseThrow(() -> new RuntimeException("Entity is Empty"));
+        TodoEntity todo = todoRepository.findById(entity.getId()).orElseThrow(() -> new RuntimeException("Entity is not exist"));
 
         todo.setDone(entity.getDone());
         todo.setId(entity.getId());
         todo.setTitle(entity.getTitle());
 
+        todoRepository.save(todo);
+
         return new TodoDTO(entity);
+    }
+
+    public Boolean deleteTodo(final String id) {
+        if (todoRepository.findById(id).isPresent()) {
+            todoRepository.deleteById(id);
+            return true;
+        } else {
+            return false;
+        }
     }
 
     private void validate(final TodoEntity entity) {

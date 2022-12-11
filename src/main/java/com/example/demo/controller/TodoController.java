@@ -4,12 +4,16 @@ import com.example.demo.dto.ResponseDTO;
 import com.example.demo.dto.TodoDTO;
 import com.example.demo.entity.TodoEntity;
 import com.example.demo.service.TodoService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/todo")
 public class TodoController {
@@ -69,6 +73,24 @@ public class TodoController {
         ResponseDTO<TodoDTO> response = ResponseDTO.<TodoDTO>builder()
                 .data(dtoList)
                 .build();
+
+        return ResponseEntity.ok().body(response);
+    }
+
+    @DeleteMapping
+    public ResponseEntity<?> deleteTodo(@RequestBody TodoDTO request) {
+        Boolean delete = todoService.deleteTodo(request.getId());
+
+        ResponseDTO<Boolean> response;
+        if (delete) {
+            response = ResponseDTO.<Boolean>builder()
+                    .data(List.of(true))
+                    .build();
+        } else {
+            response = ResponseDTO.<Boolean>builder()
+                    .error("Todo is not exist")
+                    .build();
+        }
 
         return ResponseEntity.ok().body(response);
     }

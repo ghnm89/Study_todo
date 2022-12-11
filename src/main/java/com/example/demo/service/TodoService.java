@@ -23,8 +23,8 @@ public class TodoService {
         return todoRepository.findByUserId(entity.getUserId());
     }
 
-    public List<TodoDTO> readTodoList() {
-        List<TodoEntity> entityList = todoRepository.findAll();
+    public List<TodoDTO> readTodoList(String userId) {
+        List<TodoEntity> entityList = todoRepository.findByUserId(userId);
 
         List<TodoDTO> dtoList = entityList.stream().map(TodoDTO::new).toList();
 
@@ -32,15 +32,14 @@ public class TodoService {
     }
 
     public TodoDTO updateTodo(final TodoEntity entity) {
-        TodoEntity todo = todoRepository.findById(entity.getId()).orElseThrow(() -> new RuntimeException("Entity is not exist"));
+        if (todoRepository.findById(entity.getId()).isPresent()) {
+            entity.setUserId("temporary-user");
+            todoRepository.save(entity);
 
-        todo.setDone(entity.getDone());
-        todo.setId(entity.getId());
-        todo.setTitle(entity.getTitle());
-
-        todoRepository.save(todo);
-
-        return new TodoDTO(entity);
+            return new TodoDTO(entity);
+        } else {
+            throw new RuntimeException("todo is not exist");
+        }
     }
 
     public Boolean deleteTodo(final String id) {

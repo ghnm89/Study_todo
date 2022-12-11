@@ -52,8 +52,8 @@ public class TodoController {
     }
 
     @GetMapping("/list")
-    public ResponseEntity<?> readTodoList() {
-        List<TodoDTO> dtoList = todoService.readTodoList();
+    public ResponseEntity<?> readTodoList(@RequestParam String userId) {
+        List<TodoDTO> dtoList = todoService.readTodoList(userId);
         ResponseDTO<TodoDTO> response = ResponseDTO.<TodoDTO>builder()
                 .data(dtoList)
                 .build();

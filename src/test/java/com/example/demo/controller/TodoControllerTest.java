@@ -30,6 +30,7 @@ class TodoControllerTest {
 
     @Test
     @DisplayName("Todo 생성 테스트")
+    @Transactional
     void createTodo() {
         TodoDTO dto = TodoDTO.builder()
                 .id("id")
@@ -42,12 +43,12 @@ class TodoControllerTest {
 
         List<TodoEntity> todo = todoService.createTodo(entity);
 
-        assertNotNull(todo.get(0).getId());
         assertEquals(entity.getUserId(), todo.get(0).getUserId());
     }
 
     @Test
     @DisplayName("userId의 Todo 리스트 조회 테스트")
+    @Transactional
     void readTodoList() {
         List<TodoEntity> entityList = todoRepository.saveAll(List.of(
                 TodoEntity.builder()
@@ -66,11 +67,13 @@ class TodoControllerTest {
 
         List<TodoDTO> list = todoService.readTodoList(userid);
 
+        assertEquals(list.size(), entityList.size());
         assertEquals(list.get(0).getId(), entityList.get(0).getId());
     }
 
     @Test
     @DisplayName("Todo 수정 테스트")
+    @Transactional
     void updateTodo() {
         TodoEntity beforeEntity = todoRepository.save(TodoEntity.builder()
                 .id("123")
@@ -94,6 +97,7 @@ class TodoControllerTest {
 
     @Test
     @DisplayName("Todo 삭제 테스트")
+    @Transactional
     void deleteTodo() {
         TodoEntity entity = todoRepository.save(TodoEntity.builder()
                         .id("did")
@@ -104,6 +108,6 @@ class TodoControllerTest {
 
         Boolean isDelete = todoService.deleteTodo(entity.getId());
 
-        assertTrue(isDelete);
+        assertFalse(todoRepository.findById(entity.getId()).isPresent());
     }
 }

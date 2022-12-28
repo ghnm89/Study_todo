@@ -2,36 +2,41 @@ package com.example.demo.controller;
 
 import com.example.demo.dto.TodoDTO;
 import com.example.demo.entity.TodoEntity;
-import com.example.demo.repository.TodoRepository;
 import com.example.demo.service.TodoService;
-import jakarta.transaction.Transactional;
-import org.junit.jupiter.api.BeforeEach;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
+@WebMvcTest(TodoController.class)
 class TodoControllerTest {
-    @Autowired
+    @MockBean
     private TodoService todoService;
 
     @Autowired
-    private TodoRepository todoRepository;
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     private static final String userid = "temporary-user";
 
     @Test
     @DisplayName("Todo 생성 테스트")
-    @Transactional
-    void createTodo() {
+    void createTodo() throws Exception {
         TodoDTO dto = TodoDTO.builder()
                 .id("id")
                 .title("title")
@@ -41,16 +46,24 @@ class TodoControllerTest {
         TodoEntity entity = TodoDTO.toEntity(dto);
         entity.setUserId(userid);
 
-        List<TodoEntity> todo = todoService.createTodo(entity);
+        given(todoService.createTodo(any())).willReturn(List.of(entity));
 
-        assertEquals(entity.getUserId(), todo.get(0).getUserId());
+        String requestJson = objectMapper.writeValueAsString(entity);
+
+        mockMvc.perform(post("/todo")
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .characterEncoding("UTF-8")
+                .content(requestJson)
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].title").value("title"));
     }
 
     @Test
     @DisplayName("userId의 Todo 리스트 조회 테스트")
-    @Transactional
-    void readTodoList() {
-        List<TodoEntity> entityList = todoRepository.saveAll(List.of(
+    void readTodoList() throws Exception {
+        List<TodoEntity> entityList = List.of(
                 TodoEntity.builder()
                         .id("1")
                         .userId(userid)
@@ -63,24 +76,30 @@ class TodoControllerTest {
                         .title("title 2")
                         .done(false)
                         .build()
-        ));
+        );
 
-        List<TodoDTO> list = todoService.readTodoList(userid);
+        List<TodoDTO> list = entityList.stream().map(TodoDTO::new).toList();
 
-        assertEquals(list.size(), entityList.size());
-        assertEquals(list.get(0).getId(), entityList.get(0).getId());
+        given(todoService.readTodoList(userid)).willReturn(list);
+
+        mockMvc.perform(get("/todo/list?userId=" + userid)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .characterEncoding("UTF-8")
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].title").value("title 1"));
     }
 
     @Test
     @DisplayName("Todo 수정 테스트")
-    @Transactional
-    void updateTodo() {
-        TodoEntity beforeEntity = todoRepository.save(TodoEntity.builder()
+    void updateTodo() throws Exception {
+        TodoEntity beforeEntity = TodoEntity.builder()
                 .id("123")
                 .userId(userid)
                 .title("title 1")
                 .done(true)
-                .build());
+                .build();
         TodoEntity afterEntity = TodoEntity.builder()
                 .id(beforeEntity.getId())
                 .userId(userid)
@@ -88,26 +107,44 @@ class TodoControllerTest {
                 .done(false)
                 .build();
 
-        TodoDTO todoDTO = todoService.updateTodo(afterEntity);
+        TodoDTO todoDTO = new TodoDTO(afterEntity);
+        given(todoService.updateTodo(any())).willReturn(todoDTO);
 
-        assertEquals(todoDTO.getId(), afterEntity.getId());
-        assertEquals(todoDTO.getTitle(), afterEntity.getTitle());
-        assertEquals(todoDTO.getDone(), afterEntity.getDone());
+        String requestJson = objectMapper.writeValueAsString(todoDTO);
+
+        mockMvc.perform(post("/todo/update")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .characterEncoding("UTF-8")
+                        .content(requestJson)
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].title").value("title 2"));
     }
 
     @Test
     @DisplayName("Todo 삭제 테스트")
-    @Transactional
-    void deleteTodo() {
-        TodoEntity entity = todoRepository.save(TodoEntity.builder()
+    void deleteTodo() throws Exception {
+        TodoEntity entity = TodoEntity.builder()
                         .id("did")
                         .userId(userid)
                         .title("title 133")
                         .done(false)
-                .build());
+                .build();
 
-        Boolean isDelete = todoService.deleteTodo(entity.getId());
+        TodoDTO dto = new TodoDTO(entity);
 
-        assertFalse(todoRepository.findById(entity.getId()).isPresent());
+        given(todoService.deleteTodo(entity.getId())).willReturn(true);
+
+        String requestJson = objectMapper.writeValueAsString(dto);
+
+        mockMvc.perform(delete("/todo")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .characterEncoding("UTF-8")
+                        .content(requestJson)
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0]").value(true));
     }
 }
